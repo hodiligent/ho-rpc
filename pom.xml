@@ -19,6 +19,7 @@
         <module>ho-rpc-api</module>
         <module>ho-rpc-core</module>
         <module>ho-rpc-provider</module>
+        <module>ho-rpc-consumer</module>
     </modules>
 
     <properties>

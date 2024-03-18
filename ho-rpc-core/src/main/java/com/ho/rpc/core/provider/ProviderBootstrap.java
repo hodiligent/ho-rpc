@@ -28,9 +28,8 @@ public class ProviderBootstrap implements ApplicationContextAware {
     @PostConstruct
     public void buildProviders() {
         Map<String, Object> providers = applicationContext.getBeansWithAnnotation(HoProvider.class);
-
         for (Map.Entry<String, Object> providerEntry : providers.entrySet()) {
-            Class<?> inter = providerEntry.getClass().getInterfaces()[0];
+            Class<?> inter = providerEntry.getValue().getClass().getInterfaces()[0];
             this.interfaceCache.put(inter.getCanonicalName(), providerEntry.getValue());
         }
     }
