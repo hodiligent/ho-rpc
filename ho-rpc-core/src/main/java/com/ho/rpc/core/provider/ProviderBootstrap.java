@@ -8,7 +8,6 @@ import lombok.Data;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,14 +42,17 @@ public class ProviderBootstrap implements ApplicationContextAware {
     public RpcResponse invoke(RpcRequest request) {
         Object bean = interfaceCache.get(request.getService());
         if (Objects.isNull(bean)) {
-            throw new IllegalArgumentException("调用的接口不存在" + request.getService());
+            throw new IllegalArgumentException(String.format("Don't get %s service", request.getService()));
         }
         try {
             Method method = findMethod(bean.getClass(), request.getMethod());
+            if (Objects.isNull(method)) {
+                throw new IllegalArgumentException(String.format("Don't find %s method.", request.getMethod()));
+            }
             Object result = method.invoke(bean, request.getArgs());
             return RpcResponse.ofSuccess(result);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            return RpcResponse.ofFail(e.getMessage());
         }
     }
 

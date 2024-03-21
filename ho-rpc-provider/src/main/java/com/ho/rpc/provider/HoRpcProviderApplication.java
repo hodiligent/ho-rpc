@@ -34,16 +34,4 @@ public class HoRpcProviderApplication {
     public RpcResponse invoke(@RequestBody RpcRequest request) {
         return providerBootstrap.invoke(request);
     }
-
-//    @Bean
-//    public ApplicationRunner providerRun() {
-//        return args -> {
-//            RpcRequest request = new RpcRequest();
-//            request.setService("com.ho.rpc.service.UserService");
-//            request.setMethod("findById");
-//            request.setArgs(new Object[]{100});
-//            RpcResponse response = providerBootstrap.invoke(request);
-//            System.out.printf("result:%s", response.getData());
-//        };
-//    }
 }

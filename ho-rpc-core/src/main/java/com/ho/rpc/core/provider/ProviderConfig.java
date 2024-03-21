@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ProviderConfig {
     @Bean
-    ProviderBootstrap providerBootstrap() {
+    public ProviderBootstrap initProviderBootstrap() {
         return new ProviderBootstrap();
     }
 }

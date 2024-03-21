@@ -16,7 +16,7 @@ public class RpcResponse<T> {
     /**
      * 状态
      */
-    private Boolean status;
+    private Boolean success;
 
     /**
      * 信息
