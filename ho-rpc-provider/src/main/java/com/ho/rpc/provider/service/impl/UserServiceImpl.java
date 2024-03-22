@@ -3,6 +3,8 @@ package com.ho.rpc.provider.service.impl;
 import com.ho.rpc.core.annotation.HoProvider;
 import com.ho.rpc.model.User;
 import com.ho.rpc.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,9 +18,12 @@ import java.util.Map;
 @Service
 @HoProvider
 public class UserServiceImpl implements UserService {
+    @Autowired
+    private Environment environment;
+
     @Override
     public User findById(int id) {
-        return new User(id, "Lin1-" + System.currentTimeMillis());
+        return new User(id, "Lin1-" + environment.getProperty("server.port") + "-" + System.currentTimeMillis());
     }
 
     @Override
