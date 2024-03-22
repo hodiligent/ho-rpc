@@ -5,6 +5,7 @@ import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
 import com.ho.rpc.core.meta.ProviderMeta;
 import com.ho.rpc.core.util.MethodUtil;
+import com.ho.rpc.core.util.TypeUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.context.ApplicationContext;
@@ -64,11 +65,32 @@ public class ProviderBootstrap implements ApplicationContextAware {
                 throw new IllegalArgumentException("Can't find provider meta.");
             }
             Method method = providerMeta.getMethod();
-            Object result = method.invoke(providerMeta.getServiceImpl(), request.getArgs());
+            Object[] args = processArgs(request.getArgs(), method.getParameterTypes());
+            Object result = method.invoke(providerMeta.getServiceImpl(), args);
             return RpcResponse.ofSuccess(result);
         } catch (Exception e) {
             return RpcResponse.ofFail(e.getMessage());
         }
+    }
+
+    /**
+     * 处理参数
+     *
+     * @param args
+     * @param parameterTypes
+     * @return
+     */
+    private Object[] processArgs(Object[] args, Class<?>[] parameterTypes) {
+        if (Objects.isNull(args) || args.length == 0) {
+            return args;
+        }
+        Object[] actualArgs = new Object[args.length];
+
+        for (int index = 0; index < args.length; index++) {
+            actualArgs[index] = TypeUtil.cast(args[index], parameterTypes[index]);
+        }
+
+        return actualArgs;
     }
 
     /**

@@ -2,26 +2,44 @@ package com.ho.rpc.service;
 
 import com.ho.rpc.model.User;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @Description TODO
  * @Author LinJinhao
  * @Date 2024/3/13 01:04
  */
 public interface UserService {
-    /**
-     * 根据ID找用户信息
-     *
-     * @param id
-     * @return
-     */
     User findById(int id);
 
-    /**
-     * 验证重载方法
-     *
-     * @param id
-     * @param name
-     * @return
-     */
     User findById(int id, String name);
+
+    long getId(long id);
+
+    long getId(User user);
+
+    long getId(float id);
+
+    String getName();
+
+    String getName(int id);
+
+    int[] getIds();
+
+    long[] getLongIds();
+
+    int[] getIds(int[] ids);
+
+    User[] findUsers(User[] users);
+
+    List<User> getList(List<User> userList);
+
+    Map<String, User> getMap(Map<String, User> userMap);
+
+    Boolean getFlag(boolean flag);
+
+    User findById(long id);
+
+    User ex(boolean flag);
 }

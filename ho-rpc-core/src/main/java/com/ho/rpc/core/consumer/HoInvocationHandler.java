@@ -1,10 +1,10 @@
 package com.ho.rpc.core.consumer;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
 import com.ho.rpc.core.util.MethodUtil;
+import com.ho.rpc.core.util.TypeUtil;
 import okhttp3.*;
 
 import java.io.IOException;
@@ -57,8 +57,7 @@ public class HoInvocationHandler implements InvocationHandler {
         RpcResponse rpcResponse = post(rpcRequest);
 
         if (rpcResponse.getSuccess()) {
-            JSONObject data = (JSONObject) rpcResponse.getData();
-            return data.toJavaObject(method.getReturnType());
+            return TypeUtil.castMethodResult(method, rpcResponse.getData());
         }
 
         throw new RuntimeException(rpcResponse.getMgs());

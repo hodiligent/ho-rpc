@@ -5,6 +5,9 @@ import com.ho.rpc.model.User;
 import com.ho.rpc.service.UserService;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * @Description TODO
  * @Author LinJinhao
@@ -13,26 +16,86 @@ import org.springframework.stereotype.Service;
 @Service
 @HoProvider
 public class UserServiceImpl implements UserService {
-    /**
-     * 根据ID查询用户
-     *
-     * @param id
-     * @return
-     */
     @Override
     public User findById(int id) {
-        return new User(id, "HoHo" + System.currentTimeMillis());
+        return new User(id, "Lin1-" + System.currentTimeMillis());
     }
 
-    /**
-     * 验证重载方法
-     *
-     * @param id
-     * @param name
-     * @return
-     */
     @Override
     public User findById(int id, String name) {
-        return new User(id, name + System.currentTimeMillis());
+        return new User(id, "Lin2-" + name + "_" + System.currentTimeMillis());
+    }
+
+    @Override
+    public long getId(long id) {
+        return id;
+    }
+
+    @Override
+    public long getId(User user) {
+        return user.getId().longValue();
+    }
+
+    @Override
+    public long getId(float id) {
+        return 1L;
+    }
+
+    @Override
+    public String getName() {
+        return "Lin3";
+    }
+
+    @Override
+    public String getName(int id) {
+        return "Lin4-" + id;
+    }
+
+    @Override
+    public int[] getIds() {
+        return new int[]{100, 200, 300};
+    }
+
+    @Override
+    public long[] getLongIds() {
+        return new long[]{1, 2, 3};
+    }
+
+    @Override
+    public int[] getIds(int[] ids) {
+        return ids;
+    }
+
+    @Override
+    public User[] findUsers(User[] users) {
+        return users;
+    }
+
+    @Override
+    public List<User> getList(List<User> userList) {
+        return userList;
+    }
+
+    @Override
+    public Map<String, User> getMap(Map<String, User> userMap) {
+        return userMap;
+    }
+
+    @Override
+    public Boolean getFlag(boolean flag) {
+        return !flag;
+    }
+
+    @Override
+    public User findById(long id) {
+        return new User(Long.valueOf(id).intValue(), "Lin5");
+    }
+
+    @Override
+    public User ex(boolean flag) {
+        if (flag) {
+            throw new RuntimeException("just throw an exception");
+        }
+        return new User(100, "Lin6");
     }
 }
