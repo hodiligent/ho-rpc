@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * @Description TODO
+ * @Description 将ProviderBootstrap加入Spring容器
  * @Author LinJinhao
  * @Date 2024/3/7 00:33
  */

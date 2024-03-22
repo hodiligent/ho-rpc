@@ -15,4 +15,13 @@ public interface UserService {
      * @return
      */
     User findById(int id);
+
+    /**
+     * 验证重载方法
+     *
+     * @param id
+     * @param name
+     * @return
+     */
+    User findById(int id, String name);
 }

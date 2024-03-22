@@ -10,7 +10,7 @@ import java.lang.reflect.Proxy;
 import java.util.*;
 
 /**
- * @Description TODO
+ * @Description 具体消费者启动类
  * @Author LinJinhao
  * @Date 2024/3/21 09:04
  */
@@ -21,6 +21,9 @@ public class ConsumerBootstrap implements ApplicationContextAware {
     private Map<String, Object> interfaceCache = new HashMap<>();
 
 
+    /**
+     * 启动过程
+     */
     public void start() {
         String[] names = applicationContext.getBeanDefinitionNames();
         for (String name : names) {

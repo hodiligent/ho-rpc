@@ -23,4 +23,16 @@ public class UserServiceImpl implements UserService {
     public User findById(int id) {
         return new User(id, "HoHo" + System.currentTimeMillis());
     }
+
+    /**
+     * 验证重载方法
+     *
+     * @param id
+     * @param name
+     * @return
+     */
+    @Override
+    public User findById(int id, String name) {
+        return new User(id, name + System.currentTimeMillis());
+    }
 }

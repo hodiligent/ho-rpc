@@ -3,18 +3,23 @@ package com.ho.rpc.core.provider;
 import com.ho.rpc.core.annotation.HoProvider;
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
+import com.ho.rpc.core.meta.ProviderMeta;
+import com.ho.rpc.core.util.MethodUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
- * @Description TODO
+ * @Description 具体服务提供者启动类
  * @Author LinJinhao
  * @Date 2024/3/7 00:19
  */
@@ -22,14 +27,25 @@ import java.util.Objects;
 public class ProviderBootstrap implements ApplicationContextAware {
     private ApplicationContext applicationContext;
 
-    private Map<String, Object> interfaceCache = new HashMap<>();
+    private MultiValueMap<String, ProviderMeta> providerCache = new LinkedMultiValueMap<>();
 
     @PostConstruct
     public void buildProviders() {
         Map<String, Object> providers = applicationContext.getBeansWithAnnotation(HoProvider.class);
         for (Map.Entry<String, Object> providerEntry : providers.entrySet()) {
             Class<?> inter = providerEntry.getValue().getClass().getInterfaces()[0];
-            this.interfaceCache.put(inter.getCanonicalName(), providerEntry.getValue());
+            Method[] methods = inter.getMethods();
+            for (Method method : methods) {
+                if (MethodUtil.checkLocalMethod(method)) {
+                    continue;
+                }
+
+                ProviderMeta meta = new ProviderMeta();
+                meta.setMethod(method);
+                meta.setMethodSign(MethodUtil.getMethodSign(method));
+                meta.setServiceImpl(providerEntry.getValue());
+                providerCache.add(inter.getCanonicalName(), meta);
+            }
         }
     }
 
@@ -40,16 +56,15 @@ public class ProviderBootstrap implements ApplicationContextAware {
      * @return
      */
     public RpcResponse invoke(RpcRequest request) {
-        Object bean = interfaceCache.get(request.getService());
-        if (Objects.isNull(bean)) {
-            throw new IllegalArgumentException(String.format("Don't get %s service", request.getService()));
-        }
+        String methodSign = request.getMethodSign();
+        List<ProviderMeta> providerMetas = providerCache.get(request.getService());
         try {
-            Method method = findMethod(bean.getClass(), request.getMethod());
-            if (Objects.isNull(method)) {
-                throw new IllegalArgumentException(String.format("Don't find %s method.", request.getMethod()));
+            ProviderMeta providerMeta = findProviderMeta(providerMetas, methodSign);
+            if (Objects.isNull(providerMeta)) {
+                throw new IllegalArgumentException("Can't find provider meta.");
             }
-            Object result = method.invoke(bean, request.getArgs());
+            Method method = providerMeta.getMethod();
+            Object result = method.invoke(providerMeta.getServiceImpl(), request.getArgs());
             return RpcResponse.ofSuccess(result);
         } catch (Exception e) {
             return RpcResponse.ofFail(e.getMessage());
@@ -57,19 +72,14 @@ public class ProviderBootstrap implements ApplicationContextAware {
     }
 
     /**
-     * 遍历寻找对应方法名
+     * 找到提供者服务者
      *
-     * @param clazz
-     * @param methodName
+     * @param providerMetas
+     * @param methodSign
      * @return
      */
-    private Method findMethod(Class<?> clazz, String methodName) {
-        for (Method method : clazz.getMethods()) {
-            if (method.getName().equals(methodName)) {
-                return method;
-            }
-        }
-
-        return null;
+    private ProviderMeta findProviderMeta(List<ProviderMeta> providerMetas, String methodSign) {
+        Optional<ProviderMeta> optionalProviderMeta = providerMetas.stream().filter(providerMeta -> providerMeta.getMethodSign().equals(methodSign)).findFirst();
+        return optionalProviderMeta.orElse(null);
     }
 }

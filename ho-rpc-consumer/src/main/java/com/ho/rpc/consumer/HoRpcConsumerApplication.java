@@ -34,6 +34,9 @@ public class HoRpcConsumerApplication {
         return x -> {
             User user = userService.findById(1);
             System.out.println(user);
+
+            User user2 = userService.findById(1, "lin");
+            System.out.println(user2);
         };
     }
 }
