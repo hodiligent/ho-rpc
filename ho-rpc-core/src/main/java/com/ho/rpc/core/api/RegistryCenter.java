@@ -1,5 +1,7 @@
 package com.ho.rpc.core.api;
 
+import com.ho.rpc.core.registry.ChangedListener;
+
 import java.util.List;
 
 /**
@@ -41,7 +43,13 @@ public interface RegistryCenter {
      */
     List<String> fetchAll(String service);
 
-//    void subscribe();
+    /**
+     * 订阅服务
+     *
+     * @param service
+     * @param changedListener
+     */
+    void subscribe(String service, ChangedListener changedListener);
 
     /**
      * 静态注册中心
@@ -74,6 +82,11 @@ public interface RegistryCenter {
         @Override
         public List<String> fetchAll(String service) {
             return providers;
+        }
+
+        @Override
+        public void subscribe(String service, ChangedListener changedListener) {
+
         }
     }
 }

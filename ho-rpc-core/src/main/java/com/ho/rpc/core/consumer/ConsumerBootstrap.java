@@ -14,6 +14,7 @@ import org.springframework.core.env.Environment;
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @Description 具体消费者启动类
@@ -84,9 +85,19 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
      */
     private Object createConsumerFromRegistry(Class<?> service, RegistryCenter registryCenter, RpcContext rpcContext) {
         String serviceName = service.getCanonicalName();
-        List<String> providers = registryCenter.fetchAll(serviceName);
+        List<String> providers = formatProviders(registryCenter.fetchAll(serviceName));
+
+        // 监听服务变化重新绑定
+        registryCenter.subscribe(serviceName, event -> {
+            providers.clear();
+            providers.addAll(formatProviders(event.getData()));
+        });
 
         return createConsumer(service, providers, rpcContext);
+    }
+
+    private List<String> formatProviders(List<String> nodes) {
+        return nodes.stream().map(provider -> "http://" + provider.replaceAll("_", ":")).collect(Collectors.toList());
     }
 
     /**

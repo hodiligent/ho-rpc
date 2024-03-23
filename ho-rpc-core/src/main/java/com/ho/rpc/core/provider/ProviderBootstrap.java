@@ -1,6 +1,7 @@
 package com.ho.rpc.core.provider;
 
 import com.ho.rpc.core.annotation.HoProvider;
+import com.ho.rpc.core.api.RegistryCenter;
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
 import com.ho.rpc.core.meta.ProviderMeta;
@@ -8,12 +9,15 @@ import com.ho.rpc.core.util.MethodUtil;
 import com.ho.rpc.core.util.TypeUtil;
 import jakarta.annotation.PostConstruct;
 import lombok.Data;
+import lombok.SneakyThrows;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +34,12 @@ public class ProviderBootstrap implements ApplicationContextAware {
 
     private MultiValueMap<String, ProviderMeta> providerCache = new LinkedMultiValueMap<>();
 
+    private String instance;
+
+    @Value("${server.port}")
+    private String port;
+
+    @SneakyThrows
     @PostConstruct
     public void buildProviders() {
         Map<String, Object> providers = applicationContext.getBeansWithAnnotation(HoProvider.class);
@@ -48,6 +58,26 @@ public class ProviderBootstrap implements ApplicationContextAware {
                 providerCache.add(inter.getCanonicalName(), meta);
             }
         }
+    }
+
+    @SneakyThrows
+    public void start() {
+        String ip = InetAddress.getLocalHost().getHostAddress();
+        instance = ip + ":" + port;
+        // 所有服务进行注册
+        // TODO: 服务注册了，但是spring还没初始化完成。
+        providerCache.keySet().forEach(this::registerService);
+
+    }
+
+    /**
+     * 服务注册
+     *
+     * @param service
+     */
+    private void registerService(String service) {
+        RegistryCenter registryCenter = applicationContext.getBean(RegistryCenter.class);
+        registryCenter.registry(service, instance);
     }
 
     /**
