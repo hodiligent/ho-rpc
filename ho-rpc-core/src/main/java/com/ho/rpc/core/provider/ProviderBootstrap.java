@@ -8,6 +8,7 @@ import com.ho.rpc.core.meta.ProviderMeta;
 import com.ho.rpc.core.util.MethodUtil;
 import com.ho.rpc.core.util.TypeUtil;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,8 @@ import java.util.Optional;
 public class ProviderBootstrap implements ApplicationContextAware {
     private ApplicationContext applicationContext;
 
+    private RegistryCenter registryCenter;
+
     private MultiValueMap<String, ProviderMeta> providerCache = new LinkedMultiValueMap<>();
 
     private String instance;
@@ -41,7 +44,7 @@ public class ProviderBootstrap implements ApplicationContextAware {
 
     @SneakyThrows
     @PostConstruct
-    public void buildProviders() {
+    public void init() {
         Map<String, Object> providers = applicationContext.getBeansWithAnnotation(HoProvider.class);
         for (Map.Entry<String, Object> providerEntry : providers.entrySet()) {
             Class<?> inter = providerEntry.getValue().getClass().getInterfaces()[0];
@@ -60,14 +63,17 @@ public class ProviderBootstrap implements ApplicationContextAware {
         }
     }
 
+    /**
+     * 启动过程
+     */
     @SneakyThrows
     public void start() {
         String ip = InetAddress.getLocalHost().getHostAddress();
         instance = ip + ":" + port;
+        // 启动注册中心
+        registryCenter.start();
         // 所有服务进行注册
-        // TODO: 服务注册了，但是spring还没初始化完成。
         providerCache.keySet().forEach(this::registerService);
-
     }
 
     /**
@@ -78,6 +84,27 @@ public class ProviderBootstrap implements ApplicationContextAware {
     private void registerService(String service) {
         RegistryCenter registryCenter = applicationContext.getBean(RegistryCenter.class);
         registryCenter.registry(service, instance);
+    }
+
+    /**
+     * 销毁过程
+     */
+    @PreDestroy
+    public void stop() {
+        // 所有服务进行取消注册
+        providerCache.keySet().forEach(this::unregisterService);
+        // 停止注册中心
+        registryCenter.stop();
+    }
+
+    /**
+     * 服务取消注册
+     *
+     * @param service
+     */
+    private void unregisterService(String service) {
+        RegistryCenter registryCenter = applicationContext.getBean(RegistryCenter.class);
+        registryCenter.unregistry(service, instance);
     }
 
     /**
