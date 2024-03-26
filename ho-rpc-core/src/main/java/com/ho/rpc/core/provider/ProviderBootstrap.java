@@ -49,10 +49,11 @@ public class ProviderBootstrap implements ApplicationContextAware {
                     continue;
                 }
 
-                ProviderMeta meta = new ProviderMeta();
-                meta.setMethod(method);
-                meta.setMethodSign(MethodUtil.getMethodSign(method));
-                meta.setServiceImpl(providerEntry.getValue());
+                ProviderMeta meta = ProviderMeta.builder()
+                        .method(method)
+                        .methodSign(MethodUtil.getMethodSign(method))
+                        .serviceImpl(providerEntry.getValue())
+                        .build();
                 providerCache.add(inter.getCanonicalName(), meta);
             }
         }

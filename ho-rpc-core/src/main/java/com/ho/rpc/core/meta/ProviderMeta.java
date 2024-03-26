@@ -1,5 +1,6 @@
 package com.ho.rpc.core.meta;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.lang.reflect.Method;
@@ -10,6 +11,7 @@ import java.lang.reflect.Method;
  * @Date 2024/3/22 09:49
  */
 @Data
+@Builder
 public class ProviderMeta {
     /**
      * 对应具体方法
