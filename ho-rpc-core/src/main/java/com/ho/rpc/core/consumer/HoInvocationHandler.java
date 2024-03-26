@@ -1,17 +1,15 @@
 package com.ho.rpc.core.consumer;
 
-import com.alibaba.fastjson.JSON;
-import com.ho.rpc.core.api.*;
+import com.ho.rpc.core.api.RpcContext;
+import com.ho.rpc.core.api.RpcRequest;
+import com.ho.rpc.core.api.RpcResponse;
+import com.ho.rpc.core.meta.InstanceMeta;
 import com.ho.rpc.core.util.MethodUtil;
 import com.ho.rpc.core.util.TypeUtil;
-import okhttp3.*;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @Description TODO
@@ -20,15 +18,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class HoInvocationHandler implements InvocationHandler {
 
-    private final static MediaType JSON_TYPE = MediaType.get("application/json; charset=utf-8");
-
     private Class<?> service;
 
-    private List<String> providers;
+    private List<InstanceMeta> providers;
 
     private RpcContext rpcContext;
 
-    public HoInvocationHandler(Class<?> service, List<String> providers, RpcContext rpcContext) {
+    private HttpInvoker httpInvoker = new OkHttpInvoker();
+
+    public HoInvocationHandler(Class<?> service, List<InstanceMeta> providers, RpcContext rpcContext) {
         this.service = service;
         this.providers = providers;
         this.rpcContext = rpcContext;
@@ -60,11 +58,11 @@ public class HoInvocationHandler implements InvocationHandler {
         rpcRequest.setMethodSign(MethodUtil.getMethodSign(method));
         rpcRequest.setArgs(args);
         // 获取路由
-        List<String> urls = rpcContext.getRouter().route(this.providers);
+        List<InstanceMeta> instanceMetas = rpcContext.getRouter().route(providers);
         // 负载均衡
-        String url = (String) rpcContext.getLoadBalancer().choose(urls);
+        InstanceMeta instanceMeta = rpcContext.getLoadBalancer().choose(instanceMetas);
 
-        RpcResponse rpcResponse = post(rpcRequest, url);
+        RpcResponse<?> rpcResponse = httpInvoker.post(rpcRequest, instanceMeta.toUrl());
         if (rpcResponse.getSuccess()) {
             return TypeUtil.castMethodResult(method, rpcResponse.getData());
         }
@@ -72,34 +70,4 @@ public class HoInvocationHandler implements InvocationHandler {
         throw new RuntimeException(rpcResponse.getMgs());
     }
 
-    /**
-     * okhttp客户端
-     */
-    private OkHttpClient CLIENT = new OkHttpClient.Builder()
-            .connectionPool(new ConnectionPool(16, 60, TimeUnit.SECONDS))
-            .readTimeout(1, TimeUnit.SECONDS)
-            .writeTimeout(1, TimeUnit.SECONDS)
-            .connectTimeout(1, TimeUnit.SECONDS)
-            .build();
-
-    /**
-     * 发起请求
-     *
-     * @param rpcRequest
-     * @return
-     */
-    private RpcResponse post(RpcRequest rpcRequest, String url) {
-        String reqJson = JSON.toJSONString(rpcRequest);
-        Request request = new Request.Builder()
-                .url(url)
-                .post(RequestBody.create(reqJson, JSON_TYPE))
-                .build();
-        try {
-            String resJson = Objects.requireNonNull(CLIENT.newCall(request).execute().body()).string();
-            return JSON.parseObject(resJson, RpcResponse.class);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    }
 }

@@ -5,7 +5,7 @@ import lombok.Data;
 import java.lang.reflect.Method;
 
 /**
- * @Description 服务提供者元数据
+ * @Description provider的元数据
  * @Author LinJinhao
  * @Date 2024/3/22 09:49
  */

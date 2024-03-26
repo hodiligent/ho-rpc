@@ -1,7 +1,12 @@
 package com.ho.rpc.core.util;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @Description TODO
@@ -9,22 +14,6 @@ import java.lang.reflect.Parameter;
  * @Date 2024/3/22 09:27
  */
 public class MethodUtil {
-
-    /**
-     * 识别本地方法
-     *
-     * @param methodName
-     * @return
-     */
-    public static boolean checkLocalMethod(String methodName) {
-        return "toString".equals(methodName) ||
-                "hashCode".equals(methodName) ||
-                "notifyAll".equals(methodName) ||
-                "equals".equals(methodName) ||
-                "wait".equals(methodName) ||
-                "getClass".equals(methodName) ||
-                "notify".equals(methodName);
-    }
 
     /**
      * 识别非本地方法
@@ -66,5 +55,27 @@ public class MethodUtil {
         signBuilder.append(")");
 
         return signBuilder.toString();
+    }
+
+
+    /**
+     * 找到使用了HoConsumer注解
+     *
+     * @param clazz
+     * @return
+     */
+    public static List<Field> findAnnotatedField(Class<?> clazz, Class<? extends Annotation> annotationClass) {
+        List<Field> result = new ArrayList<>();
+        while (Objects.nonNull(clazz)) {
+            Field[] fields = clazz.getDeclaredFields();
+
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(annotationClass)) {
+                    result.add(field);
+                }
+            }
+            clazz = clazz.getSuperclass();
+        }
+        return result;
     }
 }

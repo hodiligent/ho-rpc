@@ -1,6 +1,7 @@
 package com.ho.rpc.core.cluster;
 
 import com.ho.rpc.core.api.LoadBalancer;
+import com.ho.rpc.core.meta.InstanceMeta;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -10,9 +11,9 @@ import java.util.List;
  * @Author LinJinhao
  * @Date 2024/3/22 17:32
  */
-public class WeightRandomLoadBalancer<T> implements LoadBalancer<T> {
+public class WeightRandomLoadBalancer implements LoadBalancer {
     @Override
-    public T choose(List<T> providers) {
+    public InstanceMeta choose(List<InstanceMeta> providers) {
         if (CollectionUtils.isEmpty(providers)) {
             return null;
         }

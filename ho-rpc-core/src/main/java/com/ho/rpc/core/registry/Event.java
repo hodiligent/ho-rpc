@@ -1,5 +1,6 @@
 package com.ho.rpc.core.registry;
 
+import com.ho.rpc.core.meta.InstanceMeta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ import java.util.List;
 @AllArgsConstructor
 public class Event {
     /**
-     *
+     * 实例数据
      */
-    private List<String> data;
+    private List<InstanceMeta> instances;
 }

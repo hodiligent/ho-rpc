@@ -1,5 +1,7 @@
 package com.ho.rpc.core.api;
 
+import com.ho.rpc.core.meta.InstanceMeta;
+
 import java.util.List;
 
 /**
@@ -7,7 +9,7 @@ import java.util.List;
  * @Author LinJinhao
  * @Date 2024/3/22 16:32
  */
-public interface Router<T> {
+public interface Router {
 
     /**
      * 选择provider集群
@@ -15,7 +17,7 @@ public interface Router<T> {
      * @param providers
      * @return
      */
-    List<T> route(List<T> providers);
+    List<InstanceMeta> route(List<InstanceMeta> providers);
 
     /**
      * 获取默认路由

@@ -5,7 +5,11 @@ import com.ho.rpc.core.api.LoadBalancer;
 import com.ho.rpc.core.api.RegistryCenter;
 import com.ho.rpc.core.api.Router;
 import com.ho.rpc.core.api.RpcContext;
+import com.ho.rpc.core.meta.InstanceMeta;
+import com.ho.rpc.core.meta.ServiceMeta;
+import com.ho.rpc.core.util.MethodUtil;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.EnvironmentAware;
@@ -13,8 +17,10 @@ import org.springframework.core.env.Environment;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Description 具体消费者启动类
@@ -28,6 +34,15 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
     private Environment environment;
 
     private Map<String, Object> interfaceCache = new HashMap<>();
+
+    @Value("${app.id}")
+    private String app;
+
+    @Value("${app.namespace}")
+    private String namespace;
+
+    @Value("${app.env}")
+    private String env;
 
     /**
      * 初始化上下文
@@ -56,7 +71,7 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
         String[] names = applicationContext.getBeanDefinitionNames();
         for (String name : names) {
             Object bean = applicationContext.getBean(name);
-            List<Field> fields = findAnnotatedField(bean.getClass());
+            List<Field> fields = MethodUtil.findAnnotatedField(bean.getClass(), HoConsumer.class);
             fields.forEach(field -> {
                 Class<?> service = field.getType();
                 String serviceName = service.getCanonicalName();
@@ -84,20 +99,22 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
      * @return
      */
     private Object createConsumerFromRegistry(Class<?> service, RegistryCenter registryCenter, RpcContext rpcContext) {
-        String serviceName = service.getCanonicalName();
-        List<String> providers = formatProviders(registryCenter.fetchAll(serviceName));
+        ServiceMeta serviceMeta = ServiceMeta.builder()
+                .app(app)
+                .namespace(namespace)
+                .env(env)
+                .name(service.getCanonicalName())
+                .build();
+
+        List<InstanceMeta> providers = registryCenter.fetchAll(serviceMeta);
 
         // 监听服务变化重新绑定
-        registryCenter.subscribe(serviceName, event -> {
+        registryCenter.subscribe(serviceMeta, event -> {
             providers.clear();
-            providers.addAll(formatProviders(event.getData()));
+            providers.addAll(event.getInstances());
         });
 
         return createConsumer(service, providers, rpcContext);
-    }
-
-    private List<String> formatProviders(List<String> nodes) {
-        return nodes.stream().map(provider -> "http://" + provider.replaceAll("_", ":")).collect(Collectors.toList());
     }
 
     /**
@@ -106,28 +123,7 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
      * @param service
      * @return
      */
-    private Object createConsumer(Class<?> service, List<String> providers, RpcContext rpcContext) {
+    private Object createConsumer(Class<?> service, List<InstanceMeta> providers, RpcContext rpcContext) {
         return Proxy.newProxyInstance(service.getClassLoader(), new Class[]{service}, new HoInvocationHandler(service, providers, rpcContext));
-    }
-
-    /**
-     * 找到使用了HoConsumer注解
-     *
-     * @param clazz
-     * @return
-     */
-    private List<Field> findAnnotatedField(Class<?> clazz) {
-        List<Field> result = new ArrayList<>();
-        while (Objects.nonNull(clazz)) {
-            Field[] fields = clazz.getDeclaredFields();
-
-            for (Field field : fields) {
-                if (field.isAnnotationPresent(HoConsumer.class)) {
-                    result.add(field);
-                }
-            }
-            clazz = clazz.getSuperclass();
-        }
-        return result;
     }
 }

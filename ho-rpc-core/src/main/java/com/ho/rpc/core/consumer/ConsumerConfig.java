@@ -4,13 +4,12 @@ import com.ho.rpc.core.api.LoadBalancer;
 import com.ho.rpc.core.api.RegistryCenter;
 import com.ho.rpc.core.api.Router;
 import com.ho.rpc.core.cluster.RandomLoadBalancer;
+import com.ho.rpc.core.registry.ZkRegistryCenter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
-
-import java.util.List;
 
 /**
  * @Description TODO
@@ -44,6 +43,6 @@ public class ConsumerConfig {
 
     @Bean(initMethod = "start", destroyMethod = "stop")
     public RegistryCenter consumerRegistryCenter() {
-        return new RegistryCenter.StaticRegistryCenter(List.of(this.services.split(",")));
+        return new ZkRegistryCenter();
     }
 }

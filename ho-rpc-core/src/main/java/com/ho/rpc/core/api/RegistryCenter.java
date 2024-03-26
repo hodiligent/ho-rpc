@@ -1,5 +1,7 @@
 package com.ho.rpc.core.api;
 
+import com.ho.rpc.core.meta.InstanceMeta;
+import com.ho.rpc.core.meta.ServiceMeta;
 import com.ho.rpc.core.registry.ChangedListener;
 
 import java.util.List;
@@ -26,7 +28,7 @@ public interface RegistryCenter {
      * @param service
      * @param instance
      */
-    void registry(String service, String instance);
+    void registry(String service, InstanceMeta instance);
 
     /**
      * 注销服务(provider侧)
@@ -34,14 +36,14 @@ public interface RegistryCenter {
      * @param service
      * @param instance
      */
-    void unregistry(String service, String instance);
+    void unRegistry(String service, InstanceMeta instance);
 
     /**
      * 获取所有服务(consumer侧)
      *
      * @return
      */
-    List<String> fetchAll(String service);
+    List<InstanceMeta> fetchAll(ServiceMeta service);
 
     /**
      * 订阅服务
@@ -49,15 +51,15 @@ public interface RegistryCenter {
      * @param service
      * @param changedListener
      */
-    void subscribe(String service, ChangedListener changedListener);
+    void subscribe(ServiceMeta service, ChangedListener changedListener);
 
     /**
      * 静态注册中心
      */
     class StaticRegistryCenter implements RegistryCenter {
-        private final List<String> providers;
+        private final List<InstanceMeta> providers;
 
-        public StaticRegistryCenter(List<String> providers) {
+        public StaticRegistryCenter(List<InstanceMeta> providers) {
             this.providers = providers;
         }
 
@@ -70,22 +72,22 @@ public interface RegistryCenter {
         }
 
         @Override
-        public void registry(String service, String instance) {
+        public void registry(String service, InstanceMeta instance) {
             providers.add(instance);
         }
 
         @Override
-        public void unregistry(String service, String instance) {
+        public void unRegistry(String service, InstanceMeta instance) {
             providers.remove(instance);
         }
 
         @Override
-        public List<String> fetchAll(String service) {
+        public List<InstanceMeta> fetchAll(ServiceMeta service) {
             return providers;
         }
 
         @Override
-        public void subscribe(String service, ChangedListener changedListener) {
+        public void subscribe(ServiceMeta service, ChangedListener changedListener) {
 
         }
     }

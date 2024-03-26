@@ -1,6 +1,8 @@
 package com.ho.rpc.core.registry;
 
 import com.ho.rpc.core.api.RegistryCenter;
+import com.ho.rpc.core.meta.InstanceMeta;
+import com.ho.rpc.core.meta.ServiceMeta;
 import lombok.SneakyThrows;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -11,6 +13,7 @@ import org.apache.zookeeper.CreateMode;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @Description ZK注册中心
@@ -41,7 +44,7 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public void registry(String service, String instance) {
+    public void registry(String service, InstanceMeta instance) {
         String servicePath = "/" + service;
         try {
             // 创建服务的持久化节点
@@ -49,7 +52,7 @@ public class ZkRegistryCenter implements RegistryCenter {
                 CLIENT.create().withMode(CreateMode.PERSISTENT).forPath(servicePath, "service".getBytes());
             }
             // 创建实例的临时性节点
-            String instancePath = servicePath + "/" + instance;
+            String instancePath = servicePath + "/" + instance.toPath();
             CLIENT.create().withMode(CreateMode.EPHEMERAL).forPath(instancePath, "provider".getBytes());
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -57,14 +60,14 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public void unregistry(String service, String instance) {
+    public void unRegistry(String service, InstanceMeta instance) {
         String servicePath = "/" + service;
         try {
             if (Objects.isNull(CLIENT.checkExists().forPath(servicePath))) {
                 return;
             }
             // 创建实例的临时性节点
-            String instancePath = servicePath + "/" + instance;
+            String instancePath = servicePath + "/" + instance.toPath();
             CLIENT.delete().quietly().forPath(instancePath);
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -72,10 +75,14 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public List<String> fetchAll(String service) {
-        String servicePath = "/" + service;
+    public List<InstanceMeta> fetchAll(ServiceMeta service) {
+        String servicePath = "/" + service.toPath();
         try {
-            return CLIENT.getChildren().forPath(servicePath);
+            return CLIENT.getChildren().forPath(servicePath)
+                    .stream().map(item -> {
+                        String[] itemArr = item.split(":");
+                        return InstanceMeta.http(itemArr[0], Integer.parseInt(itemArr[1]));
+                    }).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -83,12 +90,12 @@ public class ZkRegistryCenter implements RegistryCenter {
 
     @SneakyThrows
     @Override
-    public void subscribe(String service, ChangedListener changedListener) {
-        TreeCache cache = TreeCache.newBuilder(CLIENT, "/" + service)
+    public void subscribe(ServiceMeta service, ChangedListener changedListener) {
+        TreeCache cache = TreeCache.newBuilder(CLIENT, "/" + service.toPath())
                 .setCacheData(true).setMaxDepth(2).build();
 
         cache.getListenable().addListener((client, event) -> {
-            List<String> nodes = fetchAll(service);
+            List<InstanceMeta> nodes = fetchAll(service);
             changedListener.fire(new Event(nodes));
         });
 

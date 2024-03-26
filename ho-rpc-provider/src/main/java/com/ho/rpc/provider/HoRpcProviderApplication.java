@@ -2,13 +2,11 @@ package com.ho.rpc.provider;
 
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
-import com.ho.rpc.core.provider.ProviderBootstrap;
 import com.ho.rpc.core.provider.ProviderConfig;
+import com.ho.rpc.core.provider.ProviderInvoker;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,10 +26,10 @@ public class HoRpcProviderApplication {
     }
 
     @Autowired
-    private ProviderBootstrap providerBootstrap;
+    private ProviderInvoker providerInvoker;
 
     @RequestMapping("/")
-    public RpcResponse invoke(@RequestBody RpcRequest request) {
-        return providerBootstrap.invoke(request);
+    public RpcResponse<?> invoke(@RequestBody RpcRequest request) {
+        return providerInvoker.invoke(request);
     }
 }

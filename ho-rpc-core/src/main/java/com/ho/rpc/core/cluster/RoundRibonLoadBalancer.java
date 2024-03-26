@@ -1,6 +1,7 @@
 package com.ho.rpc.core.cluster;
 
 import com.ho.rpc.core.api.LoadBalancer;
+import com.ho.rpc.core.meta.InstanceMeta;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -11,11 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @Author LinJinhao
  * @Date 2024/3/22 17:27
  */
-public class RoundRibonLoadBalancer<T> implements LoadBalancer<T> {
+public class RoundRibonLoadBalancer implements LoadBalancer {
     private AtomicInteger index = new AtomicInteger(0);
 
     @Override
-    public T choose(List<T> providers) {
+    public InstanceMeta choose(List<InstanceMeta> providers) {
         if (CollectionUtils.isEmpty(providers)) {
             return null;
         }
