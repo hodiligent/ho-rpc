@@ -1,5 +1,6 @@
 package com.ho.rpc.core.consumer;
 
+import com.ho.rpc.core.api.Filter;
 import com.ho.rpc.core.api.RpcContext;
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
@@ -10,6 +11,7 @@ import com.ho.rpc.core.util.TypeUtil;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @Description TODO
@@ -57,17 +59,40 @@ public class HoInvocationHandler implements InvocationHandler {
         rpcRequest.setService(this.service.getCanonicalName());
         rpcRequest.setMethodSign(MethodUtil.getMethodSign(method));
         rpcRequest.setArgs(args);
+        // 前置过滤器
+        for (Filter filter : this.rpcContext.getFilters()) {
+            RpcResponse preResponse = filter.before(rpcRequest);
+            if (Objects.nonNull(preResponse)) {
+                return preResponse;
+            }
+        }
         // 获取路由
         List<InstanceMeta> instanceMetas = rpcContext.getRouter().route(providers);
         // 负载均衡
         InstanceMeta instanceMeta = rpcContext.getLoadBalancer().choose(instanceMetas);
-
+        // 发起请求
         RpcResponse<?> rpcResponse = httpInvoker.post(rpcRequest, instanceMeta.toUrl());
+        Object result = castResponse(method, rpcResponse);
+        // 后置过滤器
+        for (Filter filter : this.rpcContext.getFilters()) {
+            rpcResponse = filter.after(rpcRequest, rpcResponse);
+        }
+        // 处理相应结果
+        return result;
+    }
+
+    /**
+     * 处理响应结果
+     *
+     * @param method
+     * @param rpcResponse
+     * @return
+     */
+    private static Object castResponse(Method method, RpcResponse<?> rpcResponse) {
         if (rpcResponse.getSuccess()) {
             return TypeUtil.castMethodResult(method, rpcResponse.getData());
         }
 
         throw new RuntimeException(rpcResponse.getMgs());
     }
-
 }

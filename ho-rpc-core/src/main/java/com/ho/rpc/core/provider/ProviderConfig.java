@@ -1,7 +1,7 @@
 package com.ho.rpc.core.provider;
 
 import com.ho.rpc.core.api.RegistryCenter;
-import com.ho.rpc.core.registry.ZkRegistryCenter;
+import com.ho.rpc.core.registry.zk.ZkRegistryCenter;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

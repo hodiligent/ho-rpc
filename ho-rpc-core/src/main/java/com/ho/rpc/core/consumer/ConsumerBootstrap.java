@@ -1,10 +1,7 @@
 package com.ho.rpc.core.consumer;
 
 import com.ho.rpc.core.annotation.HoConsumer;
-import com.ho.rpc.core.api.LoadBalancer;
-import com.ho.rpc.core.api.RegistryCenter;
-import com.ho.rpc.core.api.Router;
-import com.ho.rpc.core.api.RpcContext;
+import com.ho.rpc.core.api.*;
 import com.ho.rpc.core.meta.InstanceMeta;
 import com.ho.rpc.core.meta.ServiceMeta;
 import com.ho.rpc.core.util.MethodUtil;
@@ -52,9 +49,11 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
     private RpcContext initContext() {
         Router router = applicationContext.getBean(Router.class);
         LoadBalancer loadBalancer = applicationContext.getBean(LoadBalancer.class);
+        List<Filter> filters = (List<Filter>) applicationContext.getBeansOfType(Filter.class).values();
         RpcContext rpcContext = new RpcContext();
         rpcContext.setRouter(router);
         rpcContext.setLoadBalancer(loadBalancer);
+        rpcContext.setFilters(filters);
 
         return rpcContext;
     }
