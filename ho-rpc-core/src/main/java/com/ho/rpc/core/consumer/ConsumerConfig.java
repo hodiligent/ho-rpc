@@ -19,7 +19,7 @@ import org.springframework.core.annotation.Order;
  * @Date 2024/3/21 09:05
  */
 public class ConsumerConfig {
-    @Value("${ho-prc.providers}")
+    @Value("${ho-rpc.providers}")
     private String services;
 
     @Bean

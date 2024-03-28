@@ -6,6 +6,7 @@ import com.ho.rpc.core.meta.InstanceMeta;
 import com.ho.rpc.core.meta.ServiceMeta;
 import com.ho.rpc.core.util.MethodUtil;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -24,6 +25,7 @@ import java.util.Objects;
  * @Author LinJinhao
  * @Date 2024/3/21 09:04
  */
+@Slf4j
 @Data
 public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAware {
     private ApplicationContext applicationContext;
@@ -41,6 +43,12 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
     @Value("${app.env}")
     private String env;
 
+    @Value("${app.retries}")
+    private int retries;
+
+    @Value("${app.timeout}")
+    private int timeout;
+
     /**
      * 初始化上下文
      *
@@ -49,11 +57,14 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
     private RpcContext initContext() {
         Router router = applicationContext.getBean(Router.class);
         LoadBalancer loadBalancer = applicationContext.getBean(LoadBalancer.class);
-        List<Filter> filters = (List<Filter>) applicationContext.getBeansOfType(Filter.class).values();
+        List<Filter> filters = applicationContext.getBeansOfType(Filter.class).values().stream().toList();
         RpcContext rpcContext = new RpcContext();
         rpcContext.setRouter(router);
         rpcContext.setLoadBalancer(loadBalancer);
         rpcContext.setFilters(filters);
+
+        rpcContext.addParameter("app.retries", String.valueOf(retries));
+        rpcContext.addParameter("app.timeout", String.valueOf(timeout));
 
         return rpcContext;
     }
@@ -72,6 +83,7 @@ public class ConsumerBootstrap implements ApplicationContextAware, EnvironmentAw
             Object bean = applicationContext.getBean(name);
             List<Field> fields = MethodUtil.findAnnotatedField(bean.getClass(), HoConsumer.class);
             fields.forEach(field -> {
+                log.info("===> " + field.getName());
                 Class<?> service = field.getType();
                 String serviceName = service.getCanonicalName();
                 Object consumer = interfaceCache.get(serviceName);

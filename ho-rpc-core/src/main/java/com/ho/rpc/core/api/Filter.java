@@ -12,7 +12,7 @@ public interface Filter {
      * @param rpcRequest
      * @return
      */
-    RpcResponse before(RpcRequest rpcRequest);
+    Object before(RpcRequest rpcRequest);
 
     /**
      * 后置过滤
@@ -21,18 +21,18 @@ public interface Filter {
      * @param rpcResponse
      * @return
      */
-    RpcResponse after(RpcRequest rpcRequest, RpcResponse rpcResponse);
+    Object after(RpcRequest rpcRequest, RpcResponse rpcResponse, Object result);
 
 
     Filter Default = new Filter() {
         @Override
-        public RpcResponse before(RpcRequest rpcRequest) {
+        public Object before(RpcRequest rpcRequest) {
             return null;
         }
 
         @Override
-        public RpcResponse after(RpcRequest rpcRequest, RpcResponse rpcResponse) {
-            return rpcResponse;
+        public Object after(RpcRequest rpcRequest, RpcResponse rpcResponse, Object result) {
+            return result;
         }
     };
 }

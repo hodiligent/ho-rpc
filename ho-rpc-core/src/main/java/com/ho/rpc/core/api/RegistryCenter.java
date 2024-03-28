@@ -25,25 +25,25 @@ public interface RegistryCenter {
     /**
      * 注册服务(provider侧)
      *
-     * @param service
+     * @param serviceMeta
      * @param instance
      */
-    void registry(String service, InstanceMeta instance);
+    void registry(ServiceMeta serviceMeta, InstanceMeta instance);
 
     /**
      * 注销服务(provider侧)
      *
-     * @param service
+     * @param serviceMeta
      * @param instance
      */
-    void unRegistry(String service, InstanceMeta instance);
+    void unRegistry(ServiceMeta serviceMeta, InstanceMeta instance);
 
     /**
      * 获取所有服务(consumer侧)
      *
      * @return
      */
-    List<InstanceMeta> fetchAll(ServiceMeta service);
+    List<InstanceMeta> fetchAll(ServiceMeta serviceMeta);
 
     /**
      * 订阅服务
@@ -72,17 +72,17 @@ public interface RegistryCenter {
         }
 
         @Override
-        public void registry(String service, InstanceMeta instance) {
+        public void registry(ServiceMeta serviceMeta, InstanceMeta instance) {
             providers.add(instance);
         }
 
         @Override
-        public void unRegistry(String service, InstanceMeta instance) {
+        public void unRegistry(ServiceMeta serviceMeta, InstanceMeta instance) {
             providers.remove(instance);
         }
 
         @Override
-        public List<InstanceMeta> fetchAll(ServiceMeta service) {
+        public List<InstanceMeta> fetchAll(ServiceMeta serviceMeta) {
             return providers;
         }
 

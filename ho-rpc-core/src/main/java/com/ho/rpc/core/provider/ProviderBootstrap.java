@@ -4,11 +4,13 @@ import com.ho.rpc.core.annotation.HoProvider;
 import com.ho.rpc.core.api.RegistryCenter;
 import com.ho.rpc.core.meta.InstanceMeta;
 import com.ho.rpc.core.meta.ProviderMeta;
+import com.ho.rpc.core.meta.ServiceMeta;
 import com.ho.rpc.core.util.MethodUtil;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -25,6 +27,7 @@ import java.util.Map;
  * @Date 2024/3/7 00:19
  */
 @Data
+@Slf4j
 public class ProviderBootstrap implements ApplicationContextAware {
     private ApplicationContext applicationContext;
 
@@ -37,10 +40,20 @@ public class ProviderBootstrap implements ApplicationContextAware {
     @Value("${server.port}")
     private Integer port;
 
+    @Value("${app.id}")
+    private String app;
+
+    @Value("${app.namespace}")
+    private String namespace;
+
+    @Value("${app.env}")
+    private String env;
+
     @SneakyThrows
     @PostConstruct
     public void init() {
         Map<String, Object> providers = applicationContext.getBeansWithAnnotation(HoProvider.class);
+        this.registryCenter = applicationContext.getBean(RegistryCenter.class);
         for (Map.Entry<String, Object> providerEntry : providers.entrySet()) {
             Class<?> inter = providerEntry.getValue().getClass().getInterfaces()[0];
             Method[] methods = inter.getMethods();
@@ -78,8 +91,9 @@ public class ProviderBootstrap implements ApplicationContextAware {
      * @param service
      */
     private void registerService(String service) {
-        RegistryCenter registryCenter = applicationContext.getBean(RegistryCenter.class);
-        registryCenter.registry(service, instance);
+        ServiceMeta serviceMeta = ServiceMeta.builder()
+                .app(app).namespace(namespace).env(env).name(service).build();
+        registryCenter.registry(serviceMeta, instance);
     }
 
     /**
@@ -99,7 +113,12 @@ public class ProviderBootstrap implements ApplicationContextAware {
      * @param service
      */
     private void unRegisterService(String service) {
-        RegistryCenter registryCenter = applicationContext.getBean(RegistryCenter.class);
-        registryCenter.unRegistry(service, instance);
+        ServiceMeta serviceMeta = ServiceMeta.builder()
+                .app(app)
+                .namespace(namespace)
+                .env(env)
+                .name(service)
+                .build();
+        registryCenter.unRegistry(serviceMeta, instance);
     }
 }

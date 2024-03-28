@@ -21,7 +21,7 @@ public class RpcResponse<T> {
     /**
      * 信息
      */
-    private String mgs;
+    private String msg;
 
     /**
      * 数据

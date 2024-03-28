@@ -13,16 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Date 2024/3/27 09:47
  */
 public class CacheFilter implements Filter {
-    private final static Map<String, RpcResponse> CACHE = new ConcurrentHashMap<>();
+    private final static Map<String, Object> CACHE = new ConcurrentHashMap<>();
 
     @Override
-    public RpcResponse before(RpcRequest rpcRequest) {
+    public Object before(RpcRequest rpcRequest) {
         return CACHE.get(rpcRequest.toString());
     }
 
     @Override
-    public RpcResponse after(RpcRequest rpcRequest, RpcResponse rpcResponse) {
-        CACHE.putIfAbsent(rpcRequest.toString(), rpcResponse);
-        return rpcResponse;
+    public Object after(RpcRequest rpcRequest, RpcResponse rpcResponse, Object result) {
+        CACHE.putIfAbsent(rpcRequest.toString(), result);
+        return result;
     }
 }

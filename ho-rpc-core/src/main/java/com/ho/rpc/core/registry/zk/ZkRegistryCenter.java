@@ -6,13 +6,16 @@ import com.ho.rpc.core.meta.ServiceMeta;
 import com.ho.rpc.core.registry.ChangedListener;
 import com.ho.rpc.core.registry.Event;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -22,8 +25,17 @@ import java.util.stream.Collectors;
  * @Author LinJinhao
  * @Date 2024/3/22 18:02
  */
+@Slf4j
 public class ZkRegistryCenter implements RegistryCenter {
     private CuratorFramework CLIENT = null;
+
+    private List<TreeCache> caches = new ArrayList<>();
+
+    @Value("${ho-rpc.zkServer}")
+    private String servers;
+
+    @Value("${ho-rpc.zkNamespace}")
+    private String namespace;
 
 
     @Override
@@ -31,8 +43,8 @@ public class ZkRegistryCenter implements RegistryCenter {
         // 最大重试三次，每次间隔度量为1s
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         CLIENT = CuratorFrameworkFactory.builder()
-                .connectString("127.0.0.1:2181")
-                .namespace("ho-rpc")
+                .connectString(servers)
+                .namespace(namespace)
                 .sessionTimeoutMs(5000)
                 .connectionTimeoutMs(5000)
                 .retryPolicy(retryPolicy)
@@ -46,8 +58,8 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public void registry(String service, InstanceMeta instance) {
-        String servicePath = "/" + service;
+    public void registry(ServiceMeta serviceMeta, InstanceMeta instance) {
+        String servicePath = "/" + serviceMeta.toPath();
         try {
             // 创建服务的持久化节点
             if (Objects.isNull(CLIENT.checkExists().forPath(servicePath))) {
@@ -62,8 +74,8 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public void unRegistry(String service, InstanceMeta instance) {
-        String servicePath = "/" + service;
+    public void unRegistry(ServiceMeta serviceMeta, InstanceMeta instance) {
+        String servicePath = "/" + serviceMeta.toPath();
         try {
             if (Objects.isNull(CLIENT.checkExists().forPath(servicePath))) {
                 return;
@@ -77,8 +89,8 @@ public class ZkRegistryCenter implements RegistryCenter {
     }
 
     @Override
-    public List<InstanceMeta> fetchAll(ServiceMeta service) {
-        String servicePath = "/" + service.toPath();
+    public List<InstanceMeta> fetchAll(ServiceMeta serviceMeta) {
+        String servicePath = "/" + serviceMeta.toPath();
         try {
             return CLIENT.getChildren().forPath(servicePath)
                     .stream().map(item -> {
@@ -93,14 +105,17 @@ public class ZkRegistryCenter implements RegistryCenter {
     @SneakyThrows
     @Override
     public void subscribe(ServiceMeta service, ChangedListener changedListener) {
-        TreeCache cache = TreeCache.newBuilder(CLIENT, "/" + service.toPath())
+        final TreeCache cache = TreeCache.newBuilder(CLIENT, "/" + service.toPath())
                 .setCacheData(true).setMaxDepth(2).build();
-
-        cache.getListenable().addListener((client, event) -> {
-            List<InstanceMeta> nodes = fetchAll(service);
-            changedListener.fire(new Event(nodes));
-        });
-
+        cache.getListenable().addListener(
+                (curator, event) -> {
+                    // 有任何节点变动这里会执行
+                    log.info("zk subscribe event: " + event);
+                    List<InstanceMeta> nodes = fetchAll(service);
+                    changedListener.fire(new Event(nodes));
+                }
+        );
         cache.start();
+        caches.add(cache);
     }
 }

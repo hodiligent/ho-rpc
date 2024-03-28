@@ -4,12 +4,14 @@ import com.ho.rpc.core.api.Filter;
 import com.ho.rpc.core.api.RpcContext;
 import com.ho.rpc.core.api.RpcRequest;
 import com.ho.rpc.core.api.RpcResponse;
+import com.ho.rpc.core.consumer.http.OkHttpInvoker;
 import com.ho.rpc.core.meta.InstanceMeta;
 import com.ho.rpc.core.util.MethodUtil;
 import com.ho.rpc.core.util.TypeUtil;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Objects;
 
@@ -59,26 +61,40 @@ public class HoInvocationHandler implements InvocationHandler {
         rpcRequest.setService(this.service.getCanonicalName());
         rpcRequest.setMethodSign(MethodUtil.getMethodSign(method));
         rpcRequest.setArgs(args);
-        // 前置过滤器
-        for (Filter filter : this.rpcContext.getFilters()) {
-            RpcResponse preResponse = filter.before(rpcRequest);
-            if (Objects.nonNull(preResponse)) {
-                return preResponse;
+
+        int retries = Integer.parseInt(this.rpcContext.getParameters().getOrDefault("app.retries", "1"));
+
+        while (retries-- > 0) {
+            try {
+                // 前置过滤器
+                for (Filter filter : this.rpcContext.getFilters()) {
+                    Object preFilterResult = filter.before(rpcRequest);
+                    if (Objects.nonNull(preFilterResult)) {
+                        return preFilterResult;
+                    }
+                }
+                // 获取路由
+                List<InstanceMeta> instanceMetas = rpcContext.getRouter().route(providers);
+                // 负载均衡
+                InstanceMeta instanceMeta = rpcContext.getLoadBalancer().choose(instanceMetas);
+                // 发起请求
+                RpcResponse<?> rpcResponse = httpInvoker.post(rpcRequest, instanceMeta.toUrl());
+                Object result = castResponse(method, rpcResponse);
+                // 后置过滤器
+                for (Filter filter : this.rpcContext.getFilters()) {
+                    Object postFilterResult = filter.after(rpcRequest, rpcResponse, result);
+                    if (Objects.nonNull(postFilterResult)) {
+                        return postFilterResult;
+                    }
+                }
+            } catch (Exception e) {
+                if (!(e.getCause() instanceof SocketTimeoutException)) {
+                    throw e;
+                }
             }
         }
-        // 获取路由
-        List<InstanceMeta> instanceMetas = rpcContext.getRouter().route(providers);
-        // 负载均衡
-        InstanceMeta instanceMeta = rpcContext.getLoadBalancer().choose(instanceMetas);
-        // 发起请求
-        RpcResponse<?> rpcResponse = httpInvoker.post(rpcRequest, instanceMeta.toUrl());
-        Object result = castResponse(method, rpcResponse);
-        // 后置过滤器
-        for (Filter filter : this.rpcContext.getFilters()) {
-            rpcResponse = filter.after(rpcRequest, rpcResponse);
-        }
         // 处理相应结果
-        return result;
+        return null;
     }
 
     /**
@@ -92,7 +108,6 @@ public class HoInvocationHandler implements InvocationHandler {
         if (rpcResponse.getSuccess()) {
             return TypeUtil.castMethodResult(method, rpcResponse.getData());
         }
-
-        throw new RuntimeException(rpcResponse.getMgs());
+        throw new RuntimeException(rpcResponse.getMsg());
     }
 }
